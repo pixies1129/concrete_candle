@@ -1,0 +1,354 @@
+:root {
+  color-scheme: light;
+  --bg: #f5efe6;
+  --ink: #241f1a;
+  --accent: #b3541e;
+  --accent-dark: #7a3712;
+  --card: #ffffff;
+  --line: #e2d8c9;
+  font-family: 'Pretendard', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.app {
+  max-width: 960px;
+  margin: 0 auto;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header {
+  padding: 16px 16px 0;
+}
+
+.app-header h1 {
+  font-size: clamp(1.05rem, 2.5vw, 1.4rem);
+  margin: 0 0 12px;
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.tab {
+  appearance: none;
+  border: none;
+  background: none;
+  padding: 10px 16px;
+  font-size: 0.95rem;
+  color: #8a7f6f;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+
+.tab.active {
+  color: var(--accent-dark);
+  border-bottom-color: var(--accent);
+  font-weight: 700;
+}
+
+.app-main {
+  flex: 1;
+  padding: 16px;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 18px;
+  border-radius: 10px;
+  border: none;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn.primary {
+  background: var(--accent);
+  color: #fff;
+}
+
+.btn.primary:disabled {
+  background: #cbb9a4;
+  cursor: not-allowed;
+}
+
+.btn.secondary {
+  background: var(--card);
+  color: var(--ink);
+  border: 1px solid var(--line);
+}
+
+.btn.danger {
+  background: #b3261e;
+  color: #fff;
+}
+
+.btn.small {
+  padding: 6px 12px;
+  font-size: 0.8rem;
+}
+
+/* Shoot guide */
+.shoot-guide {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.guide-picker {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.guide-chip {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.guide-chip.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.guide-tip {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #6b5f4f;
+}
+
+.camera-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  background: #111;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.camera-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.camera-error {
+  color: #f2e6d8;
+  padding: 24px;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.overlay-thirds {
+  background-image: linear-gradient(rgba(255, 255, 255, 0.55) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.55) 1px, transparent 1px);
+  background-size: calc(100% / 3) calc(100% / 3);
+}
+
+.overlay-center-circle::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 55%;
+  height: 55%;
+  transform: translate(-50%, -50%);
+  border: 2px dashed rgba(255, 200, 120, 0.8);
+  border-radius: 50%;
+}
+
+.overlay-corner-box::after {
+  content: '';
+  position: absolute;
+  right: 6%;
+  bottom: 8%;
+  width: 40%;
+  height: 40%;
+  border: 2px dashed rgba(255, 255, 255, 0.75);
+  border-radius: 10px;
+}
+
+.shoot-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Photo editor */
+.photo-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.photo-editor.empty {
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.canvas-wrap {
+  width: 100%;
+  background: #1c1a17;
+  border-radius: 14px;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+}
+
+.edit-canvas {
+  width: 100%;
+  height: auto;
+  display: block;
+  touch-action: none;
+  cursor: grab;
+}
+
+.editor-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.panel-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.panel-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #8a7f6f;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.chip-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.chip {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: #fbf8f3;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.chip.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.chip.emoji {
+  font-size: 1.1rem;
+  padding: 6px 10px;
+}
+
+.edit-block {
+  border-top: 1px dashed var(--line);
+  padding-top: 12px;
+}
+
+.ai-block {
+  border-top: none;
+  padding-top: 0;
+  background: linear-gradient(135deg, #fff3e6, #fbeadb);
+  border: 1px solid #f0d9bd;
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.ai-hint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #8a6a45;
+}
+
+.edit-block input[type='text'] {
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  font-size: 0.9rem;
+}
+
+.inline-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.inline-controls.stacked {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.panel-row.actions {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+@media (min-width: 720px) {
+  .photo-editor {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .canvas-wrap {
+    flex: 1;
+  }
+
+  .editor-panel {
+    width: 320px;
+    flex-shrink: 0;
+  }
+
+  .camera-frame {
+    aspect-ratio: 4 / 3;
+  }
+}
