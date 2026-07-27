@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { autoEnhance } from '../lib/autoEnhance.js'
 import { autoStraighten } from '../lib/autoStraighten.js'
 import { smartCrop } from '../lib/smartCrop.js'
+import { generateCaption } from '../lib/captionGenerator.js'
 
 const ASPECTS = {
   '1:1': { label: '정사각형', value: 1 },
@@ -10,6 +11,9 @@ const ASPECTS = {
 }
 
 const MAX_DIM = 1600
+
+const BRAND_TEXT = 'grime candle'
+const BRAND_HANDLE = '@concrete_candle'
 
 function capDims(w, h, maxDim = MAX_DIM) {
   if (Math.max(w, h) <= maxDim) return { w, h }
@@ -39,16 +43,18 @@ export default function PhotoEditor({ sourceImage, onSourceImageChange }) {
   const dragRef = useRef(null)
 
   const [canvasSize, setCanvasSize] = useState(null)
+  const [renderTick, setRenderTick] = useState(0)
+  const bump = () => setRenderTick((t) => t + 1)
+
   const [filter, setFilter] = useState('none')
   const [aiEnhanced, setAiEnhanced] = useState(false)
   const [enhancing, setEnhancing] = useState(false)
+
   const [aspectKey, setAspectKey] = useState('4:5')
   const [aiComposed, setAiComposed] = useState(false)
   const [composing, setComposing] = useState(false)
   const [composeInfo, setComposeInfo] = useState(null)
-  const [brandOn, setBrandOn] = useState(false)
-  const [brandText, setBrandText] = useState('OO CANDLE')
-  const [handleText, setHandleText] = useState('@your_store')
+
   const [texts, setTexts] = useState([])
   const [stickers, setStickers] = useState([])
   const [selected, setSelected] = useState(null) // { type: 'text'|'sticker', id }
@@ -70,6 +76,7 @@ export default function PhotoEditor({ sourceImage, onSourceImageChange }) {
       setAiComposed(false)
       setComposeInfo(null)
       setCanvasSize(capDims(img.naturalWidth, img.naturalHeight))
+      bump()
     }
     img.src = sourceImage
   }, [sourceImage])
@@ -77,13 +84,14 @@ export default function PhotoEditor({ sourceImage, onSourceImageChange }) {
   useEffect(() => {
     draw()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canvasSize, texts, stickers, filter, brandOn, brandText, handleText, aiEnhanced])
+  }, [canvasSize, texts, stickers, filter, renderTick])
 
   function toggleAiEnhance() {
     if (!canvasSize || !frameImgRef.current) return
     if (aiEnhanced) {
       imgRef.current = frameImgRef.current
       setAiEnhanced(false)
+      bump()
       return
     }
     setEnhancing(true)
@@ -92,6 +100,7 @@ export default function PhotoEditor({ sourceImage, onSourceImageChange }) {
       imgRef.current = enhanced
       setAiEnhanced(true)
       setEnhancing(false)
+      bump()
     }, 10)
   }
 
@@ -110,6 +119,7 @@ export default function PhotoEditor({ sourceImage, onSourceImageChange }) {
       setAiEnhanced(false)
       setAiComposed(true)
       setComposeInfo({ angleDeg, subjectSource: subject?.source })
+      bump()
     } finally {
       setComposing(false)
     }
@@ -123,6 +133,7 @@ export default function PhotoEditor({ sourceImage, onSourceImageChange }) {
     setAiEnhanced(false)
     setAiComposed(false)
     setComposeInfo(null)
+    bump()
   }
 
   function draw() {
@@ -135,19 +146,17 @@ export default function PhotoEditor({ sourceImage, onSourceImageChange }) {
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
     ctx.filter = 'none'
 
-    if (brandOn) {
-      const barH = canvas.height * 0.12
-      ctx.fillStyle = 'rgba(20,16,14,0.55)'
-      ctx.fillRect(0, canvas.height - barH, canvas.width, barH)
-      ctx.textAlign = 'left'
-      ctx.textBaseline = 'middle'
-      ctx.fillStyle = '#f5efe6'
-      ctx.font = `700 ${barH * 0.4}px ${FONT_FAMILY}`
-      ctx.fillText(brandText, canvas.width * 0.04, canvas.height - barH / 2 - barH * 0.14)
-      ctx.font = `400 ${barH * 0.26}px ${FONT_FAMILY}`
-      ctx.fillStyle = '#d8cdbe'
-      ctx.fillText(handleText, canvas.width * 0.04, canvas.height - barH / 2 + barH * 0.22)
-    }
+    const barH = canvas.height * 0.12
+    ctx.fillStyle = 'rgba(20,16,14,0.55)'
+    ctx.fillRect(0, canvas.height - barH, canvas.width, barH)
+    ctx.textAlign = 'left'
+    ctx.textBaseline = 'middle'
+    ctx.fillStyle = '#f5efe6'
+    ctx.font = `700 ${barH * 0.4}px ${FONT_FAMILY}`
+    ctx.fillText(BRAND_TEXT, canvas.width * 0.04, canvas.height - barH / 2 - barH * 0.14)
+    ctx.font = `400 ${barH * 0.26}px ${FONT_FAMILY}`
+    ctx.fillStyle = '#d8cdbe'
+    ctx.fillText(BRAND_HANDLE, canvas.width * 0.04, canvas.height - barH / 2 + barH * 0.22)
 
     stickers.forEach((s) => {
       ctx.font = `${s.size}px sans-serif`
@@ -290,6 +299,18 @@ export default function PhotoEditor({ sourceImage, onSourceImageChange }) {
     link.download = `concrete-candle-${Date.now()}.png`
     link.href = canvas.toDataURL('image/png')
     link.click()
+  }
+
+  function handleGenerateCaption() {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const caption = generateCaption(canvas, BRAND_TEXT)
+    const id = makeId()
+    setTexts((prev) => [
+      ...prev,
+      { id, value: caption, xPct: 50, yPct: 76, size: 40, color: '#ffffff' },
+    ])
+    setSelected({ type: 'text', id })
   }
 
   const selectedText = selected?.type === 'text' ? texts.find((t) => t.id === selected.id) : null
@@ -451,31 +472,15 @@ export default function PhotoEditor({ sourceImage, onSourceImageChange }) {
           </div>
         )}
 
-        <div className="panel-row edit-block">
-          <label className="checkbox-row">
-            <input
-              type="checkbox"
-              checked={brandOn}
-              onChange={(e) => setBrandOn(e.target.checked)}
-            />
-            브랜드 프레임 넣기
-          </label>
-          {brandOn && (
-            <div className="inline-controls stacked">
-              <input
-                type="text"
-                value={brandText}
-                onChange={(e) => setBrandText(e.target.value)}
-                placeholder="브랜드명"
-              />
-              <input
-                type="text"
-                value={handleText}
-                onChange={(e) => setHandleText(e.target.value)}
-                placeholder="@인스타그램"
-              />
-            </div>
-          )}
+        <div className="panel-row edit-block ai-block">
+          <span className="panel-label">캡션 생성</span>
+          <p className="ai-hint">
+            사진 톤을 분석해서 어울리는 캡션을 만들고, 누를 때마다 새 문구를 바로 사진 위에
+            올려줘요.
+          </p>
+          <button className="btn secondary" onClick={handleGenerateCaption}>
+            ✍️ 캡션 생성해서 사진에 넣기
+          </button>
         </div>
 
         <div className="panel-row actions">

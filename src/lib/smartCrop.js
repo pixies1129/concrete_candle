@@ -1,3 +1,5 @@
+import { estimateBackgroundColor, colorDistance } from './colorUtils.js'
+
 let modelPromise = null
 
 function loadModel() {
@@ -36,32 +38,7 @@ function saliencyBox(canvas) {
   const h = canvas.height
   const ctx = canvas.getContext('2d')
   const { data } = ctx.getImageData(0, 0, w, h)
-
-  const patch = Math.max(2, Math.round(Math.min(w, h) * 0.04))
-  const corners = [
-    [0, 0],
-    [w - patch, 0],
-    [0, h - patch],
-    [w - patch, h - patch],
-  ]
-  let bgR = 0
-  let bgG = 0
-  let bgB = 0
-  let count = 0
-  for (const [cx, cy] of corners) {
-    for (let y = cy; y < cy + patch; y++) {
-      for (let x = cx; x < cx + patch; x++) {
-        const i = (y * w + x) * 4
-        bgR += data[i]
-        bgG += data[i + 1]
-        bgB += data[i + 2]
-        count++
-      }
-    }
-  }
-  bgR /= count
-  bgG /= count
-  bgB /= count
+  const bg = estimateBackgroundColor(canvas)
 
   const threshold = 42
   let minX = w
@@ -72,10 +49,7 @@ function saliencyBox(canvas) {
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       const i = (y * w + x) * 4
-      const dr = data[i] - bgR
-      const dg = data[i + 1] - bgG
-      const db = data[i + 2] - bgB
-      const dist = Math.sqrt(dr * dr + dg * dg + db * db)
+      const dist = colorDistance(data[i], data[i + 1], data[i + 2], bg)
       if (dist > threshold) {
         hits++
         if (x < minX) minX = x
