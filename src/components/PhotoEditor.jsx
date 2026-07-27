@@ -1,5 +1,21 @@
 import { useEffect, useRef, useState } from 'react'
 import { autoEnhance } from '../lib/autoEnhance.js'
+import { autoStraighten } from '../lib/autoStraighten.js'
+import { smartCrop } from '../lib/smartCrop.js'
+
+const ASPECTS = {
+  '1:1': { label: '정사각형', value: 1 },
+  '4:5': { label: '피드(4:5)', value: 4 / 5 },
+  '9:16': { label: '스토리(9:16)', value: 9 / 16 },
+}
+
+const MAX_DIM = 1600
+
+function capDims(w, h, maxDim = MAX_DIM) {
+  if (Math.max(w, h) <= maxDim) return { w, h }
+  const scale = maxDim / Math.max(w, h)
+  return { w: Math.round(w * scale), h: Math.round(h * scale) }
+}
 
 const FILTERS = {
   none: { label: '원본', css: 'none' },
@@ -18,13 +34,18 @@ const makeId = () => nextId++
 export default function PhotoEditor({ sourceImage, onSourceImageChange }) {
   const canvasRef = useRef(null)
   const imgRef = useRef(null)
-  const originalImgRef = useRef(null)
+  const pristineImgRef = useRef(null)
+  const frameImgRef = useRef(null)
   const dragRef = useRef(null)
 
   const [canvasSize, setCanvasSize] = useState(null)
   const [filter, setFilter] = useState('none')
   const [aiEnhanced, setAiEnhanced] = useState(false)
   const [enhancing, setEnhancing] = useState(false)
+  const [aspectKey, setAspectKey] = useState('4:5')
+  const [aiComposed, setAiComposed] = useState(false)
+  const [composing, setComposing] = useState(false)
+  const [composeInfo, setComposeInfo] = useState(null)
   const [brandOn, setBrandOn] = useState(false)
   const [brandText, setBrandText] = useState('OO CANDLE')
   const [handleText, setHandleText] = useState('@your_store')
@@ -35,24 +56,20 @@ export default function PhotoEditor({ sourceImage, onSourceImageChange }) {
   useEffect(() => {
     if (!sourceImage) {
       imgRef.current = null
-      originalImgRef.current = null
+      pristineImgRef.current = null
+      frameImgRef.current = null
       setCanvasSize(null)
       return
     }
     const img = new Image()
     img.onload = () => {
       imgRef.current = img
-      originalImgRef.current = img
+      pristineImgRef.current = img
+      frameImgRef.current = img
       setAiEnhanced(false)
-      const maxDim = 1600
-      let w = img.naturalWidth
-      let h = img.naturalHeight
-      if (Math.max(w, h) > maxDim) {
-        const scale = maxDim / Math.max(w, h)
-        w = Math.round(w * scale)
-        h = Math.round(h * scale)
-      }
-      setCanvasSize({ w, h })
+      setAiComposed(false)
+      setComposeInfo(null)
+      setCanvasSize(capDims(img.naturalWidth, img.naturalHeight))
     }
     img.src = sourceImage
   }, [sourceImage])
@@ -63,19 +80,49 @@ export default function PhotoEditor({ sourceImage, onSourceImageChange }) {
   }, [canvasSize, texts, stickers, filter, brandOn, brandText, handleText, aiEnhanced])
 
   function toggleAiEnhance() {
-    if (!canvasSize || !originalImgRef.current) return
+    if (!canvasSize || !frameImgRef.current) return
     if (aiEnhanced) {
-      imgRef.current = originalImgRef.current
+      imgRef.current = frameImgRef.current
       setAiEnhanced(false)
       return
     }
     setEnhancing(true)
     setTimeout(() => {
-      const enhanced = autoEnhance(originalImgRef.current, canvasSize.w, canvasSize.h)
+      const enhanced = autoEnhance(frameImgRef.current, canvasSize.w, canvasSize.h)
       imgRef.current = enhanced
       setAiEnhanced(true)
       setEnhancing(false)
     }, 10)
+  }
+
+  async function applyAiComposition() {
+    if (!pristineImgRef.current) return
+    setComposing(true)
+    try {
+      const natW = pristineImgRef.current.naturalWidth
+      const natH = pristineImgRef.current.naturalHeight
+      const { canvas: straightened, angleDeg } = autoStraighten(pristineImgRef.current, natW, natH)
+      const { canvas: cropped, subject } = await smartCrop(straightened, ASPECTS[aspectKey].value)
+
+      frameImgRef.current = cropped
+      imgRef.current = cropped
+      setCanvasSize({ w: cropped.width, h: cropped.height })
+      setAiEnhanced(false)
+      setAiComposed(true)
+      setComposeInfo({ angleDeg, subjectSource: subject?.source })
+    } finally {
+      setComposing(false)
+    }
+  }
+
+  function revertAiComposition() {
+    if (!pristineImgRef.current) return
+    frameImgRef.current = pristineImgRef.current
+    imgRef.current = pristineImgRef.current
+    setCanvasSize(capDims(pristineImgRef.current.naturalWidth, pristineImgRef.current.naturalHeight))
+    setAiEnhanced(false)
+    setAiComposed(false)
+    setComposeInfo(null)
   }
 
   function draw() {
@@ -276,6 +323,45 @@ export default function PhotoEditor({ sourceImage, onSourceImageChange }) {
       </div>
 
       <div className="editor-panel">
+        <div className="panel-row edit-block ai-block">
+          <span className="panel-label">AI 구도 보정</span>
+          <p className="ai-hint">
+            피사체를 자동으로 인식해서 비율에 맞게 다시 프레이밍하고, 기울어진 수평도 바로잡아요.
+          </p>
+          <div className="chip-row">
+            {Object.entries(ASPECTS).map(([key, a]) => (
+              <button
+                key={key}
+                className={aspectKey === key ? 'chip active' : 'chip'}
+                onClick={() => setAspectKey(key)}
+                disabled={composing}
+              >
+                {a.label}
+              </button>
+            ))}
+          </div>
+          <div className="inline-controls">
+            <button className="btn secondary" onClick={applyAiComposition} disabled={composing}>
+              {composing ? '구도 분석 중...' : '🖼️ AI로 구도 다시 잡기'}
+            </button>
+            {aiComposed && (
+              <button className="btn secondary" onClick={revertAiComposition} disabled={composing}>
+                원본 프레임으로 되돌리기
+              </button>
+            )}
+          </div>
+          {composeInfo && (
+            <p className="ai-hint">
+              {composeInfo.angleDeg
+                ? `기울기 약 ${Math.abs(composeInfo.angleDeg)}° 보정함. `
+                : ''}
+              {composeInfo.subjectSource === 'model'
+                ? '피사체를 인식해서 프레이밍했어요.'
+                : '배경 대비를 분석해서 프레이밍했어요.'}
+            </p>
+          )}
+        </div>
+
         <div className="panel-row edit-block ai-block">
           <span className="panel-label">AI 감성보정</span>
           <p className="ai-hint">
