@@ -21,6 +21,10 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
   if (!res.ok) {
     const data = await res.json().catch(() => ({}) as { error?: string })
     if (data.error) console.error('[CANDLE STUDIO AI]', path, res.status, data.error)
+    // 400/413은 사용자가 바로 고칠 수 있는 요청 문제라 서버 메시지를 그대로 보여준다.
+    if ((res.status === 400 || res.status === 413) && data.error) {
+      throw new AIProviderError(data.error, 'api-error')
+    }
     const code = res.status >= 500 ? 'generation-failed' : 'api-error'
     const friendly = res.status >= 500 ? '이미지를 생성하지 못했습니다.' : '잠시 후 다시 시도해주세요.'
     throw new AIProviderError(friendly, code)

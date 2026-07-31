@@ -10,9 +10,16 @@ export class HttpError extends Error {
   }
 }
 
+const MAX_BODY_BYTES = 4_000_000
+
 export async function readJsonBody<T = unknown>(req: IncomingMessage): Promise<T> {
   const chunks: Buffer[] = []
+  let total = 0
   for await (const chunk of req) {
+    total += (chunk as Buffer).length
+    if (total > MAX_BODY_BYTES) {
+      throw new HttpError(413, '이미지 용량이 너무 큽니다. 더 작은 사진으로 시도해주세요.')
+    }
     chunks.push(chunk as Buffer)
   }
   const raw = Buffer.concat(chunks).toString('utf-8')
