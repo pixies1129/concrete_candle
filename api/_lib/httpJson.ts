@@ -48,8 +48,10 @@ export async function withJsonHandler(
     sendJson(res, 200, result)
   } catch (e) {
     if (e instanceof HttpError) {
+      if (e.status >= 500) console.error('[api]', e.status, e.message)
       sendJson(res, e.status, { error: e.message })
     } else {
+      console.error('[api] unhandled error', e)
       sendJson(res, 500, { error: e instanceof Error ? e.message : '알 수 없는 오류가 발생했습니다.' })
     }
   }
