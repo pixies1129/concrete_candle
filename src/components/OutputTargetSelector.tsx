@@ -1,5 +1,6 @@
 import { OUTPUT_TARGETS } from '../data/catalog'
 import type { AspectRatio, OutputTargetId } from '../types'
+import { ChipGroup } from './ChipGroup'
 
 interface OutputTargetSelectorProps {
   target: OutputTargetId
@@ -27,18 +28,12 @@ export function OutputTargetSelector({ target, aspectRatio, onChange }: OutputTa
       </div>
 
       {current && current.aspectRatios.length > 1 && (
-        <div className="aspect-row">
-          {current.aspectRatios.map((ar) => (
-            <button
-              key={ar}
-              type="button"
-              className={`chip${ar === aspectRatio ? ' active' : ''}`}
-              onClick={() => onChange(target, ar)}
-            >
-              {ar}
-            </button>
-          ))}
-        </div>
+        <ChipGroup
+          className="aspect-row"
+          items={current.aspectRatios.map((ar) => ({ id: ar, label: ar }))}
+          isActive={(ar) => ar === aspectRatio}
+          onSelect={(ar) => onChange(target, ar)}
+        />
       )}
     </div>
   )

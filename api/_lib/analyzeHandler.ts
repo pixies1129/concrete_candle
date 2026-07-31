@@ -43,6 +43,7 @@ export async function handleAnalyze(body: AnalyzeRequestBody): Promise<ProductAn
     const parsed = JSON.parse(text)
     return { ...FALLBACK_ANALYSIS, ...parsed }
   } catch {
+    console.error('[api] analyze: failed to parse Gemini response as JSON:', text.slice(0, 300))
     return FALLBACK_ANALYSIS
   }
 }

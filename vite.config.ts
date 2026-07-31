@@ -9,7 +9,6 @@ function apiDevMiddleware(): Plugin {
     configureServer(server) {
       const mount = (route: string, modulePath: string, exportName: string) => {
         server.middlewares.use(route, async (req, res, next) => {
-          if (req.method !== 'POST') return next()
           try {
             const [{ withJsonHandler }, handlerModule] = await Promise.all([
               server.ssrLoadModule('/api/_lib/httpJson.ts'),

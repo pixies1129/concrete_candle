@@ -22,7 +22,7 @@ export function Create() {
   const [season, setSeason] = useState<SeasonId>('christmas')
   const [props, setProps] = useState<PropId[]>([])
 
-  const [images, setImages] = useState<GeneratedImage[]>([])
+  const [image, setImage] = useState<GeneratedImage | null>(null)
   const [loading, setLoading] = useState(false)
   const [genError, setGenError] = useState<string | null>(null)
 
@@ -63,11 +63,11 @@ export function Create() {
           season: concept === 'seasonal' ? season : undefined,
           props,
         }
-        const results = await getAIProvider().generateImages(request, RESULT_COUNT)
-        setImages(results)
+        const [result] = await getAIProvider().generateImages(request, RESULT_COUNT)
+        setImage(result ?? null)
       } catch (e) {
         setGenError(e instanceof Error ? e.message : '이미지를 생성하지 못했습니다.')
-        setImages([])
+        setImage(null)
       } finally {
         setLoading(false)
       }
@@ -82,8 +82,8 @@ export function Create() {
     void generate(next.id)
   }, [concept, generate])
 
-  const toggleLike = (id: string) => {
-    setImages((prev) => prev.map((img) => (img.id === id ? { ...img, liked: !img.liked } : img)))
+  const toggleLike = () => {
+    setImage((prev) => (prev ? { ...prev, liked: !prev.liked } : prev))
   }
 
   const download = (image: GeneratedImage) => {
@@ -167,9 +167,8 @@ export function Create() {
           )}
 
           <ResultGallery
-            images={images}
+            image={image}
             loading={loading}
-            pendingCount={RESULT_COUNT}
             onToggleLike={toggleLike}
             onDownload={download}
             onRegenerate={() => void generate()}

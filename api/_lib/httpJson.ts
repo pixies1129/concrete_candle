@@ -10,6 +10,9 @@ export class HttpError extends Error {
   }
 }
 
+// Comfortable headroom above what src/utils/image.ts's client-side resize
+// (1536px longest edge, JPEG q0.85) ever produces, well under Vercel's
+// serverless request body ceiling (~4.5MB).
 const MAX_BODY_BYTES = 4_000_000
 
 export async function readJsonBody<T = unknown>(req: IncomingMessage): Promise<T> {
@@ -43,6 +46,9 @@ export async function withJsonHandler(
   fn: (body: any) => Promise<unknown>,
 ) {
   try {
+    if (req.method !== 'POST') {
+      throw new HttpError(405, 'Method not allowed')
+    }
     const body = await readJsonBody(req)
     const result = await fn(body)
     sendJson(res, 200, result)

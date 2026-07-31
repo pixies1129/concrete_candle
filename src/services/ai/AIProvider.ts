@@ -7,11 +7,8 @@ export interface AIProvider {
 }
 
 export class AIProviderError extends Error {
-  code: 'api-error' | 'generation-failed'
-
-  constructor(message: string, code: 'api-error' | 'generation-failed' = 'api-error') {
+  constructor(message: string) {
     super(message)
     this.name = 'AIProviderError'
-    this.code = code
   }
 }

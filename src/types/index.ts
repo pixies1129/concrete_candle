@@ -84,5 +84,3 @@ export interface ProductAnalysis {
   hasLogo: boolean
   notableFeatures: string[]
 }
-
-export type GenerationErrorCode = 'generation-failed' | 'api-error' | 'product-not-detected' | 'image-too-small'

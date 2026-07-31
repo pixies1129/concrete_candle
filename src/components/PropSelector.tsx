@@ -1,5 +1,6 @@
 import { PROPS } from '../data/catalog'
 import type { PropId } from '../types'
+import { ChipGroup } from './ChipGroup'
 
 interface PropSelectorProps {
   selected: PropId[]
@@ -20,18 +21,5 @@ export function PropSelector({ selected, onChange }: PropSelectorProps) {
     }
   }
 
-  return (
-    <div className="prop-grid">
-      {PROPS.map((p) => (
-        <button
-          key={p.id}
-          type="button"
-          className={`chip${selected.includes(p.id) ? ' active' : ''}`}
-          onClick={() => toggle(p.id)}
-        >
-          {p.label}
-        </button>
-      ))}
-    </div>
-  )
+  return <ChipGroup items={PROPS} isActive={(id) => selected.includes(id)} onSelect={toggle} />
 }

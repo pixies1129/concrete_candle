@@ -381,12 +381,6 @@ a {
 }
 
 /* ---- results ---- */
-.result-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-}
-
 .result-card {
   border-radius: var(--radius-md);
   overflow: hidden;
@@ -549,9 +543,5 @@ a {
   .target-grid,
   .concept-grid {
     grid-template-columns: repeat(3, 1fr);
-  }
-
-  .result-grid {
-    grid-template-columns: repeat(4, 1fr);
   }
 }

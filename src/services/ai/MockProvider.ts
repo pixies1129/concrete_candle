@@ -5,10 +5,7 @@ function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-/**
- * STEP 2에서 GeminiProvider로 교체되기 전까지 위저드 UI를 검증하기 위한 임시 구현.
- * 업로드된 원본 이미지를 그대로 결과로 반환한다 (실제 AI 생성 없음).
- */
+// VITE_USE_MOCK_AI=true일 때 사용하는, 실제 AI 호출 없이 업로드 이미지를 그대로 돌려주는 구현.
 export class MockProvider implements AIProvider {
   readonly name = 'mock'
 

@@ -1,5 +1,6 @@
 import { CONCEPTS, SEASONS } from '../data/catalog'
 import type { ConceptId, SeasonId } from '../types'
+import { ChipGroup } from './ChipGroup'
 
 interface ConceptSelectorProps {
   concept: ConceptId
@@ -27,17 +28,8 @@ export function ConceptSelector({ concept, season, onChangeConcept, onChangeSeas
       </div>
 
       {concept === 'seasonal' && (
-        <div className="prop-grid" style={{ marginTop: 12 }}>
-          {SEASONS.map((s) => (
-            <button
-              key={s.id}
-              type="button"
-              className={`chip${s.id === season ? ' active' : ''}`}
-              onClick={() => onChangeSeason(s.id)}
-            >
-              {s.label}
-            </button>
-          ))}
+        <div style={{ marginTop: 12 }}>
+          <ChipGroup items={SEASONS} isActive={(id) => id === season} onSelect={onChangeSeason} />
         </div>
       )}
     </div>
