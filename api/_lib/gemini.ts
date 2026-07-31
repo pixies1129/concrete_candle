@@ -17,9 +17,28 @@ function getApiKey(): string {
   return key
 }
 
+// 무료 티어에서 흔한 429(rate limit)/503(모델 과부하)은 잠깐 뒤 재시도하면
+// 성공하는 경우가 많다. 지수 백오프 + 지터로 최대 3회 시도한다.
+const RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504])
+const MAX_ATTEMPTS = 3
+
+async function fetchWithRetry(url: string, init: RequestInit): Promise<Response> {
+  let lastRes: Response | undefined
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    const res = await fetch(url, init)
+    if (res.ok || !RETRYABLE_STATUSES.has(res.status)) return res
+    lastRes = res
+    if (attempt < MAX_ATTEMPTS - 1) {
+      const delay = 700 * 2 ** attempt + Math.random() * 400
+      await new Promise((resolve) => setTimeout(resolve, delay))
+    }
+  }
+  return lastRes!
+}
+
 async function callGemini(model: string, parts: GeminiPart[], generationConfig?: Record<string, unknown>) {
   const apiKey = getApiKey()
-  const res = await fetch(`${API_BASE}/${model}:generateContent`, {
+  const res = await fetchWithRetry(`${API_BASE}/${model}:generateContent`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
