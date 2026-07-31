@@ -1,6 +1,6 @@
-import { HttpError } from './httpJson'
-import { generateImageWithGemini } from './gemini'
-import { buildGenerationPrompt } from './promptBuilder'
+import { HttpError } from './httpJson.js'
+import { generateImageWithGemini } from './gemini.js'
+import { buildGenerationPrompt } from './promptBuilder.js'
 
 interface GenerateRequestBody {
   imageBase64?: string

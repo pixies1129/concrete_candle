@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
-import { withJsonHandler } from './_lib/httpJson'
-import { handleAnalyze } from './_lib/analyzeHandler'
+import { withJsonHandler } from './_lib/httpJson.js'
+import { handleAnalyze } from './_lib/analyzeHandler.js'
 
 export const config = { api: { bodyParser: false } }
 

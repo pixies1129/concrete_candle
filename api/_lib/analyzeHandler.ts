@@ -1,6 +1,6 @@
-import type { ProductAnalysis } from './types'
-import { HttpError } from './httpJson'
-import { analyzeProductWithGemini } from './gemini'
+import type { ProductAnalysis } from './types.js'
+import { HttpError } from './httpJson.js'
+import { analyzeProductWithGemini } from './gemini.js'
 
 interface AnalyzeRequestBody {
   imageBase64?: string
