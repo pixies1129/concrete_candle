@@ -44,11 +44,13 @@ export async function withJsonHandler(
   req: IncomingMessage,
   res: ServerResponse,
   fn: (body: any) => Promise<unknown>,
+  guard?: (req: IncomingMessage) => void,
 ) {
   try {
     if (req.method !== 'POST') {
       throw new HttpError(405, 'Method not allowed')
     }
+    guard?.(req)
     const body = await readJsonBody(req)
     const result = await fn(body)
     sendJson(res, 200, result)

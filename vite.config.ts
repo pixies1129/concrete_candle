@@ -7,22 +7,37 @@ function apiDevMiddleware(): Plugin {
     name: 'candle-studio-api-dev-middleware',
     apply: 'serve',
     configureServer(server) {
-      const mount = (route: string, modulePath: string, exportName: string) => {
+      const mount = (
+        route: string,
+        modulePath: string,
+        exportName: string,
+        routeName: string,
+        rateLimitOpts: { perMinutePerIp: number; perDayGlobal: number },
+      ) => {
         server.middlewares.use(route, async (req, res, next) => {
           try {
-            const [{ withJsonHandler }, handlerModule] = await Promise.all([
+            const [{ withJsonHandler }, { enforceRateLimit }, handlerModule] = await Promise.all([
               server.ssrLoadModule('/api/_lib/httpJson.ts'),
+              server.ssrLoadModule('/api/_lib/rateLimit.ts'),
               server.ssrLoadModule(modulePath),
             ])
-            await withJsonHandler(req, res, (body: unknown) => handlerModule[exportName](body))
+            await withJsonHandler(req, res, (body: unknown) => handlerModule[exportName](body), (r: typeof req) =>
+              enforceRateLimit(r, routeName, rateLimitOpts),
+            )
           } catch (err) {
             next(err)
           }
         })
       }
 
-      mount('/api/generate', '/api/_lib/generateHandler.ts', 'handleGenerate')
-      mount('/api/analyze', '/api/_lib/analyzeHandler.ts', 'handleAnalyze')
+      mount('/api/generate', '/api/_lib/generateHandler.ts', 'handleGenerate', 'generate', {
+        perMinutePerIp: 6,
+        perDayGlobal: 60,
+      })
+      mount('/api/analyze', '/api/_lib/analyzeHandler.ts', 'handleAnalyze', 'analyze', {
+        perMinutePerIp: 10,
+        perDayGlobal: 150,
+      })
     },
   }
 }
