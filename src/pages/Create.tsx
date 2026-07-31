@@ -10,7 +10,7 @@ import { CONCEPTS } from '../data/catalog'
 import type { AspectRatio, ConceptId, GeneratedImage, GenerationRequest, OutputTargetId, PropId, SeasonId } from '../types'
 
 const STEP_LABELS = ['사진 업로드', '스타일 선택', '생성 결과']
-const RESULT_COUNT = 4
+const RESULT_COUNT = 1
 
 export function Create() {
   const { product, error: uploadError, loadFile, reset } = useImageUpload()
