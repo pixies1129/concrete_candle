@@ -1,4 +1,4 @@
-import type { ProductAnalysis } from '../../src/types'
+import type { ProductAnalysis } from './types'
 import { HttpError } from './httpJson'
 import { analyzeProductWithGemini } from './gemini'
 
