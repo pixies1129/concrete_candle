@@ -17,10 +17,11 @@ function getApiKey(): string {
   return key
 }
 
-// 무료 티어에서 흔한 429(rate limit)/503(모델 과부하)은 잠깐 뒤 재시도하면
-// 성공하는 경우가 많다. 지수 백오프 + 지터로 최대 3회 시도한다.
-const RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504])
-const MAX_ATTEMPTS = 3
+// 429(rate limit)는 재시도 대상에서 제외한다: 실패한 시도도 분당/일일 쿼터에
+// 잡힐 수 있어서, 몇 초 백오프로는 어차피 안 풀리는 429를 재시도하면 실패 1건이
+// 쿼터 소모 2~3배로 불어난다. 503 등 진짜 일시적 서버 과부하만 재시도 대상으로 둔다.
+const RETRYABLE_STATUSES = new Set([500, 502, 503, 504])
+const MAX_ATTEMPTS = 2
 
 // "check your plan and billing" 문구가 붙은 429는 플랜 단위 하드 쿼터 초과라
 // 몇 초 뒤 재시도해도 100% 다시 실패한다. 감지되면 즉시 포기하고 이후 요청은
