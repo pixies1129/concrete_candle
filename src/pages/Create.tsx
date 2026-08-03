@@ -26,26 +26,9 @@ export function Create() {
   const [loading, setLoading] = useState(false)
   const [genError, setGenError] = useState<string | null>(null)
 
-  const [analyzing, setAnalyzing] = useState(false)
-  const [detectionWarning, setDetectionWarning] = useState<string | null>(null)
-
-  const goToStyleStep = useCallback(async () => {
+  const goToStyleStep = useCallback(() => {
     if (!product) return
-    setDetectionWarning(null)
-    setAnalyzing(true)
-    try {
-      const analysis = await getAIProvider().analyzeProduct(product.file)
-      const noProductDetected =
-        !analysis.productType || ['none', 'unknown', '없음'].includes(analysis.productType.trim().toLowerCase())
-      if (noProductDetected) {
-        setDetectionWarning('제품이 잘 보이는 사진을 업로드해주세요.')
-      }
-    } catch {
-      // 분석 실패는 진행을 막지 않는다 — 참고용 신호일 뿐이다.
-    } finally {
-      setAnalyzing(false)
-      setStep(2)
-    }
+    setStep(2)
   }, [product])
 
   const generate = useCallback(
@@ -108,13 +91,8 @@ export function Create() {
         <div>
           <ImageUploader product={product} error={uploadError} onFile={loadFile} onReset={reset} />
           <div className="generate-bar">
-            <button
-              type="button"
-              className="btn btn-primary btn-block"
-              disabled={!product || analyzing}
-              onClick={() => void goToStyleStep()}
-            >
-              {analyzing ? '사진 확인 중...' : '다음 단계'}
+            <button type="button" className="btn btn-primary btn-block" disabled={!product} onClick={goToStyleStep}>
+              다음 단계
             </button>
           </div>
         </div>
@@ -122,15 +100,6 @@ export function Create() {
 
       {step === 2 && (
         <div>
-          {detectionWarning && (
-            <div className="error-banner">
-              <span>{detectionWarning}</span>
-              <button type="button" className="btn btn-secondary" onClick={() => setStep(1)}>
-                다시 업로드
-              </button>
-            </div>
-          )}
-
           <p className="section-title">어떤 이미지를 만들까요?</p>
           <OutputTargetSelector
             target={target}

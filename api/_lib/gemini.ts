@@ -1,8 +1,8 @@
 import { HttpError } from './httpJson.js'
+import { markQuotaExhausted, QUOTA_EXCEEDED_MESSAGE } from './quotaGuard.js'
 
 const API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models'
 const IMAGE_MODEL = 'gemini-2.5-flash-image'
-const VISION_MODEL = 'gemini-flash-latest'
 
 interface GeminiPart {
   text?: string
@@ -22,23 +22,17 @@ function getApiKey(): string {
 const RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504])
 const MAX_ATTEMPTS = 3
 
-async function fetchWithRetry(url: string, init: RequestInit): Promise<Response> {
-  let lastRes: Response | undefined
-  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-    const res = await fetch(url, init)
-    if (res.ok || !RETRYABLE_STATUSES.has(res.status)) return res
-    lastRes = res
-    if (attempt < MAX_ATTEMPTS - 1) {
-      const delay = 700 * 2 ** attempt + Math.random() * 400
-      await new Promise((resolve) => setTimeout(resolve, delay))
-    }
-  }
-  return lastRes!
+// "check your plan and billing" 문구가 붙은 429는 플랜 단위 하드 쿼터 초과라
+// 몇 초 뒤 재시도해도 100% 다시 실패한다. 감지되면 즉시 포기하고 이후 요청은
+// quotaGuard로 막아서 같은 실패에 재시도/요청을 낭비하지 않는다.
+function isHardQuotaError(text: string): boolean {
+  return /plan and billing/i.test(text)
 }
 
 async function callGemini(model: string, parts: GeminiPart[], generationConfig?: Record<string, unknown>) {
   const apiKey = getApiKey()
-  const res = await fetchWithRetry(`${API_BASE}/${model}:generateContent`, {
+  const url = `${API_BASE}/${model}:generateContent`
+  const init: RequestInit = {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -48,16 +42,33 @@ async function callGemini(model: string, parts: GeminiPart[], generationConfig?:
       contents: [{ role: 'user', parts }],
       ...(generationConfig ? { generationConfig } : {}),
     }),
-  })
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => '')
-    throw new HttpError(res.status === 429 ? 429 : 502, `Gemini API 오류 (${res.status}): ${text.slice(0, 300)}`)
   }
 
-  return res.json() as Promise<{
-    candidates?: { content?: { parts?: GeminiPart[] } }[]
-  }>
+  let lastStatus = 0
+  let lastText = ''
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    const res = await fetch(url, init)
+    if (res.ok) {
+      return res.json() as Promise<{
+        candidates?: { content?: { parts?: GeminiPart[] } }[]
+      }>
+    }
+
+    lastStatus = res.status
+    lastText = await res.text().catch(() => '')
+
+    if (res.status === 429 && isHardQuotaError(lastText)) {
+      markQuotaExhausted()
+      throw new HttpError(429, QUOTA_EXCEEDED_MESSAGE)
+    }
+    if (!RETRYABLE_STATUSES.has(res.status)) break
+    if (attempt < MAX_ATTEMPTS - 1) {
+      const delay = 700 * 2 ** attempt + Math.random() * 400
+      await new Promise((resolve) => setTimeout(resolve, delay))
+    }
+  }
+
+  throw new HttpError(lastStatus === 429 ? 429 : 502, `Gemini API 오류 (${lastStatus}): ${lastText.slice(0, 300)}`)
 }
 
 export async function generateImageWithGemini(params: {
@@ -78,22 +89,4 @@ export async function generateImageWithGemini(params: {
   }
 
   return { base64: imagePart.inlineData.data, mimeType: imagePart.inlineData.mimeType }
-}
-
-export async function analyzeProductWithGemini(params: {
-  imageBase64: string
-  imageMimeType: string
-  prompt: string
-}): Promise<string> {
-  const json = await callGemini(
-    VISION_MODEL,
-    [{ text: params.prompt }, { inlineData: { mimeType: params.imageMimeType, data: params.imageBase64 } }],
-    { responseMimeType: 'application/json' },
-  )
-
-  const text = json.candidates?.[0]?.content?.parts?.find((p) => p.text)?.text
-  if (!text) {
-    throw new HttpError(502, '제품 사진을 분석하지 못했습니다.')
-  }
-  return text
 }

@@ -1,8 +1,7 @@
-import type { GeneratedImage, GenerationRequest, ProductAnalysis } from '../../types'
+import type { GeneratedImage, GenerationRequest } from '../../types'
 
 export interface AIProvider {
   readonly name: string
-  analyzeProduct(image: File): Promise<ProductAnalysis>
   generateImages(request: GenerationRequest, count: number): Promise<GeneratedImage[]>
 }
 

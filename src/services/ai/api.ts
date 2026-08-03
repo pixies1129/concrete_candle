@@ -1,4 +1,4 @@
-import type { GenerationRequest, ProductAnalysis } from '../../types'
+import type { GenerationRequest } from '../../types'
 import { fileToBase64 } from '../../utils/image'
 import { AIProviderError } from './AIProvider'
 
@@ -30,26 +30,6 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
   }
 
   return res.json() as Promise<T>
-}
-
-// 같은 사진으로 STEP1 <-> STEP2를 오가며 "다음 단계"를 여러 번 눌러도
-// 분석 API를 반복 호출하지 않도록 파일 기준으로 결과를 캐싱한다.
-const analysisCache = new WeakMap<File, Promise<ProductAnalysis>>()
-
-export async function requestAnalyze(file: File): Promise<ProductAnalysis> {
-  const cached = analysisCache.get(file)
-  if (cached) return cached
-
-  const promise = (async () => {
-    const { base64, mimeType } = await fileToBase64(file)
-    return postJson<ProductAnalysis>('/api/analyze', { imageBase64: base64, imageMimeType: mimeType })
-  })().catch((err) => {
-    analysisCache.delete(file)
-    throw err
-  })
-
-  analysisCache.set(file, promise)
-  return promise
 }
 
 export async function requestGenerate(request: GenerationRequest, count: number): Promise<RawGenerateResponse> {

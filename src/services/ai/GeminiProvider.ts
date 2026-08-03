@@ -1,13 +1,9 @@
-import type { GeneratedImage, GenerationRequest, ProductAnalysis } from '../../types'
+import type { GeneratedImage, GenerationRequest } from '../../types'
 import type { AIProvider } from './AIProvider'
-import { requestAnalyze, requestGenerate } from './api'
+import { requestGenerate } from './api'
 
 export class GeminiProvider implements AIProvider {
   readonly name = 'gemini'
-
-  async analyzeProduct(image: File): Promise<ProductAnalysis> {
-    return requestAnalyze(image)
-  }
 
   async generateImages(request: GenerationRequest, count: number): Promise<GeneratedImage[]> {
     const { images } = await requestGenerate(request, count)

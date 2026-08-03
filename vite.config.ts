@@ -34,10 +34,6 @@ function apiDevMiddleware(): Plugin {
         perMinutePerIp: 6,
         perDayGlobal: 60,
       })
-      mount('/api/analyze', '/api/_lib/analyzeHandler.ts', 'handleAnalyze', 'analyze', {
-        perMinutePerIp: 10,
-        perDayGlobal: 150,
-      })
     },
   }
 }

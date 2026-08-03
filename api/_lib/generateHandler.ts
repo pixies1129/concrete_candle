@@ -1,6 +1,7 @@
 import { HttpError } from './httpJson.js'
 import { generateImageWithGemini } from './gemini.js'
 import { buildGenerationPrompt } from './promptBuilder.js'
+import { isQuotaExhausted, QUOTA_EXCEEDED_MESSAGE } from './quotaGuard.js'
 
 interface GenerateRequestBody {
   imageBase64?: string
@@ -20,6 +21,9 @@ export interface GenerateResponse {
 const MAX_COUNT = 4
 
 export async function handleGenerate(body: GenerateRequestBody): Promise<GenerateResponse> {
+  if (isQuotaExhausted()) {
+    throw new HttpError(429, QUOTA_EXCEEDED_MESSAGE)
+  }
   if (!body?.imageBase64 || !body?.imageMimeType) {
     throw new HttpError(400, '제품 사진이 필요합니다.')
   }
